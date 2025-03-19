@@ -221,7 +221,7 @@ class Game {
             scoreElement.style.zIndex = '10';
             document.getElementById('game-container').appendChild(scoreElement);
         }
-        scoreElement.textContent = 'Score: £0';
+        scoreElement.textContent = 'Transfer War Chest: £0';
         
         // Show character selection
         this.setupCharacterSelection();
@@ -405,7 +405,7 @@ class Game {
             this.snake.segmentScales[0] = this.snake.maxScale;
             this.food = this.generateFood();
             this.score++;
-            document.getElementById('score').textContent = `Score: £${this.score * 5}`;
+            document.getElementById('score').textContent = `Transfer War Chest: £${this.score}`;
             
             // Increase speed every 5 food items by 10%
             if (this.score % 5 === 0) {
