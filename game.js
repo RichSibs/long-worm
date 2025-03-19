@@ -1,8 +1,8 @@
 // Game constants
-const GRID_SIZE = 50;
-const CELL_SIZE = 25;
-const GAME_WIDTH = 1000;
-const GAME_HEIGHT = 600;
+const GRID_SIZE = 60;
+const CELL_SIZE = 30;
+const GAME_WIDTH = 900;
+const GAME_HEIGHT = 540;
 const GRID_WIDTH = GAME_WIDTH / CELL_SIZE;
 const GRID_HEIGHT = GAME_HEIGHT / CELL_SIZE;
 
@@ -78,7 +78,7 @@ class Game {
         this.canvas.height = containerHeight;
         
         // Update grid size based on container dimensions
-        this.gridSize = Math.min(containerWidth, containerHeight) / 25;
+        this.gridSize = Math.min(containerWidth, containerHeight) / 15;
         
         // Update snake and food positions if game is running
         if (this.snake) {
@@ -315,8 +315,8 @@ class Game {
                     headImage,
                     segment.x * this.gridSize - offset,
                     segment.y * this.gridSize - offset,
-                    scaledSize,
-                    scaledSize
+                    scaledSize * 1.2,
+                    scaledSize * 1.2
                 );
             } else {
                 // Draw body segment
@@ -335,8 +335,8 @@ class Game {
             this.images.food,
             this.food.x * this.gridSize,
             this.food.y * this.gridSize,
-            this.gridSize * 1.8,
-            this.gridSize
+            this.gridSize * 2,
+            this.gridSize * 1.2
         );
 
         // Draw game over
