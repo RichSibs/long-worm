@@ -1,8 +1,8 @@
 // Game constants
-const GRID_SIZE = 40;
-const CELL_SIZE = 20;
-const GAME_WIDTH = 1200;
-const GAME_HEIGHT = 800;
+const GRID_SIZE = 50;
+const CELL_SIZE = 25;
+const GAME_WIDTH = 1000;
+const GAME_HEIGHT = 600;
 const GRID_WIDTH = GAME_WIDTH / CELL_SIZE;
 const GRID_HEIGHT = GAME_HEIGHT / CELL_SIZE;
 
@@ -78,7 +78,7 @@ class Game {
         this.canvas.height = containerHeight;
         
         // Update grid size based on container dimensions
-        this.gridSize = Math.min(containerWidth, containerHeight) / 20;
+        this.gridSize = Math.min(containerWidth, containerHeight) / 25;
         
         // Update snake and food positions if game is running
         if (this.snake) {
