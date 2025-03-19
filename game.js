@@ -224,6 +224,17 @@ class Game {
         this.lastRenderTime = 0;
         this.characterType = null;
         
+        // Clear the canvas
+        if (this.ctx) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+
+        // Hide game area and pitch
+        const gameArea = document.getElementById('game-area');
+        if (gameArea) {
+            gameArea.style.visibility = 'hidden';
+        }
+
         // Hide restart button
         const restartBtn = document.getElementById('restart-btn');
         if (restartBtn) {
@@ -247,6 +258,12 @@ class Game {
     }
 
     startGame() {
+        // Make game area visible again
+        const gameArea = document.getElementById('game-area');
+        if (gameArea) {
+            gameArea.style.visibility = 'visible';
+        }
+
         this.snake = new Snake(this.gridSize, this.characterType, this.images);
         this.food = this.generateFood();
         
