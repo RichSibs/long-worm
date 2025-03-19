@@ -174,48 +174,41 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
-            background-color: rgba(0, 0, 0, 0.5);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            font-size: 24px;
+            background-color: transparent;
+            border: none;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.3s ease;
-            background-size: 70% 70%;
-            background-position: center;
+            transition: opacity 0.3s ease;
+            padding: 0;
+            background-size: contain;
             background-repeat: no-repeat;
-            transform: rotate(0deg);
-        }
-
-        .control-btn.up {
-            transform: rotate(-90deg);
-        }
-
-        .control-btn.down {
-            transform: rotate(90deg);
-        }
-
-        .control-btn.left {
-            transform: rotate(0deg);
-        }
-
-        .control-btn.right {
-            transform: rotate(180deg);
-        }
-
-        .control-btn.investment {
-            background-image: url('bald_man_left.png');
-        }
-
-        .control-btn.owner {
-            background-image: url('AF_facing_left.png');
+            background-position: center;
         }
 
         .control-btn:active {
-            background-color: rgba(0, 0, 0, 0.7);
-            border-color: rgba(255, 255, 255, 0.5);
+            opacity: 0.7;
+        }
+
+        #up-btn {
+            background-image: url('Buttons.png');
+            transform: rotate(0deg);
+        }
+
+        #down-btn {
+            background-image: url('Buttons.png');
+            transform: rotate(180deg);
+        }
+
+        #left-btn {
+            background-image: url('Buttons.png');
+            transform: rotate(-90deg);
+        }
+
+        #right-btn {
+            background-image: url('Buttons.png');
+            transform: rotate(90deg);
         }
 
         #restart-btn {
@@ -318,11 +311,6 @@
             .control-btn {
                 width: 70px;
                 height: 70px;
-                background-size: 80% 80%;
-            }
-
-            .control-btn span {
-                display: none; /* Hide the arrow characters */
             }
         }
 
@@ -404,12 +392,12 @@
 
     <div class="controls">
         <div class="vertical-controls">
-            <button id="up-btn" class="control-btn up investment"><span>↑</span></button>
-            <button id="down-btn" class="control-btn down investment"><span>↓</span></button>
+            <button id="up-btn" class="control-btn"></button>
+            <button id="down-btn" class="control-btn"></button>
         </div>
         <div class="horizontal-controls">
-            <button id="left-btn" class="control-btn left investment"><span>←</span></button>
-            <button id="right-btn" class="control-btn right investment"><span>→</span></button>
+            <button id="left-btn" class="control-btn"></button>
+            <button id="right-btn" class="control-btn"></button>
         </div>
     </div>
 
