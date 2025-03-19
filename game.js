@@ -402,7 +402,7 @@ class Game {
             this.snake.segmentScales[0] = this.snake.maxScale;
             this.food = this.generateFood();
             this.score++;
-            document.getElementById('score').textContent = `Transfer War Chest: £${this.score}`;
+            document.getElementById('score').textContent = `Transfer War Chest: £${this.score * 5}`;
             
             // Increase speed every 5 food items by 10%
             if (this.score % 5 === 0) {
