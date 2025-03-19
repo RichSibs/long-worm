@@ -32,7 +32,7 @@
 
         #game-title {
             position: absolute;
-            top: -100px; /* Moved title up further */
+            top: -110px; /* Increased from -100px */
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
@@ -53,7 +53,9 @@
         #game-title .line2 {
             display: block;
             font-size: 24px;
-            color: #ffffff;
+            color: #FFC125; /* Restored lighter yellow color */
+            font-style: italic; /* Restored italic style */
+            text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.8); /* Added text shadow */
         }
 
         #game-area {
@@ -218,7 +220,7 @@
             }
 
             #game-title {
-                top: -60px;
+                top: -70px; /* Increased from -60px */
                 width: 90%; /* Add width constraint */
                 white-space: nowrap; /* Prevent line breaks */
                 overflow: hidden; /* Hide overflow */
