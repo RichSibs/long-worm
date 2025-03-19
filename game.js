@@ -34,6 +34,22 @@ class Game {
         this.pitchSvg = document.getElementById('pitch-svg');
         this.gameArea = document.getElementById('game-area');
 
+        // Add game title
+        const gameTitle = document.createElement('div');
+        gameTitle.id = 'game-title';
+        
+        const line1 = document.createElement('span');
+        line1.className = 'line1';
+        line1.textContent = 'LONG WORM';
+        
+        const line2 = document.createElement('span');
+        line2.className = 'line2';
+        line2.textContent = 'Capitalist Football Edition';
+        
+        gameTitle.appendChild(line1);
+        gameTitle.appendChild(line2);
+        document.getElementById('game-container').appendChild(gameTitle);
+
 // Load images
         console.log('Loading images...');
         this.images = {
@@ -110,7 +126,7 @@ class Game {
         div.style.textAlign = 'center';
         
         const title = document.createElement('h2');
-        title.textContent = 'Choose Your Character';
+        title.textContent = 'Choose Your Chairman';
         title.style.color = '#FFD700';
         div.appendChild(title);
 
@@ -208,6 +224,12 @@ class Game {
         this.lastRenderTime = 0;
         this.characterType = null;
         
+        // Hide restart button
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) {
+            restartBtn.style.display = 'none';
+        }
+        
         // Create score element if it doesn't exist
         let scoreElement = document.getElementById('score');
         if (!scoreElement) {
@@ -247,127 +269,77 @@ class Game {
         this.ctx.fillStyle = '#3a702f';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw pitch markings
-        this.ctx.strokeStyle = '#ffffff';
+        // Set line style for pitch markings
+        this.ctx.strokeStyle = 'white';
         this.ctx.lineWidth = 2;
 
-        // Calculate base unit for scaling (using 1.5:1 ratio)
-        const margin = this.gridSize;
-        const pitchWidth = this.canvas.width - 2 * margin;
-        const pitchHeight = Math.floor(pitchWidth * 1.5);  // Standard 1.5:1 ratio
-        const yOffset = (this.canvas.height - pitchHeight) / 2;
+        // Calculate pitch dimensions with margins (using standard 1.5:1 ratio)
+        const margin = 20;
+        const pitchWidth = this.canvas.width - (margin * 2);
+        const pitchHeight = this.canvas.height - (margin * 2);
 
-        // Scale factors based on standard pitch dimensions
-        // Standard width is 45-90m, we'll use 70m as reference
-        const unit = pitchWidth / 70;  // One meter in pixels
-
-        // Calculate key dimensions
-        const penaltyAreaWidth = 16.5 * unit;  // 16.5m (18 yards)
-        const penaltyAreaLength = 40.3 * unit;  // 40.3m (44 yards)
-        const goalAreaWidth = 5.5 * unit;      // 5.5m (6 yards)
-        const goalAreaLength = 18.3 * unit;    // 18.3m (20 yards)
-        const centerCircleRadius = 9.15 * unit; // 9.15m (10 yards)
-        const penaltySpotDistance = 11 * unit; // 11m (12 yards)
-        const goalWidth = 2 * unit;            // Goal depth
-
-        // Main pitch outline
-        this.ctx.strokeRect(margin, yOffset, pitchWidth, pitchHeight);
-
-        // Center line
-        const midX = this.canvas.width / 2;
-        const midY = this.canvas.height / 2;
+        // Draw main pitch outline
         this.ctx.beginPath();
-        this.ctx.moveTo(midX, yOffset);
-        this.ctx.lineTo(midX, yOffset + pitchHeight);
+        this.ctx.rect(margin, margin, pitchWidth, pitchHeight);
         this.ctx.stroke();
 
-        // Center circle
+        // Draw center line
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
         this.ctx.beginPath();
-        this.ctx.arc(midX, midY, centerCircleRadius, 0, Math.PI * 2);
+        this.ctx.moveTo(centerX, margin);
+        this.ctx.lineTo(centerX, this.canvas.height - margin);
         this.ctx.stroke();
 
-        // Center spot
+        // Draw center circle (10 yards = 9.15m radius)
+        const centerCircleRadius = Math.min(pitchWidth, pitchHeight) * 0.1;
         this.ctx.beginPath();
-        this.ctx.arc(midX, midY, 2, 0, Math.PI * 2);
+        this.ctx.arc(centerX, centerY, centerCircleRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Draw center spot
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Draw penalty areas (18 yard box)
+        const penaltyAreaWidth = pitchWidth * 0.165; // 18 yards = 16.5m
+        const penaltyAreaHeight = pitchHeight * 0.44; // Matches reference images
 
         // Left penalty area
-        this.ctx.strokeRect(
-            margin,
-            midY - penaltyAreaLength/2,
-            penaltyAreaWidth,
-            penaltyAreaLength
-        );
+        this.ctx.beginPath();
+        this.ctx.rect(margin, (this.canvas.height - penaltyAreaHeight) / 2, penaltyAreaWidth, penaltyAreaHeight);
+        this.ctx.stroke();
 
         // Right penalty area
-        this.ctx.strokeRect(
-            this.canvas.width - margin - penaltyAreaWidth,
-            midY - penaltyAreaLength/2,
-            penaltyAreaWidth,
-            penaltyAreaLength
-        );
-
-        // Left goal area
-        this.ctx.strokeRect(
-            margin,
-            midY - goalAreaLength/2,
-            goalAreaWidth,
-            goalAreaLength
-        );
-
-        // Right goal area
-        this.ctx.strokeRect(
-            this.canvas.width - margin - goalAreaWidth,
-            midY - goalAreaLength/2,
-            goalAreaWidth,
-            goalAreaLength
-        );
-
-        // Left goal
-        this.ctx.strokeRect(
-            margin - goalWidth,
-            midY - goalAreaLength/4,
-            goalWidth,
-            goalAreaLength/2
-        );
-
-        // Right goal
-        this.ctx.strokeRect(
-            this.canvas.width - margin,
-            midY - goalAreaLength/4,
-            goalWidth,
-            goalAreaLength/2
-        );
-
-        // Penalty spots
         this.ctx.beginPath();
+        this.ctx.rect(this.canvas.width - margin - penaltyAreaWidth, (this.canvas.height - penaltyAreaHeight) / 2, penaltyAreaWidth, penaltyAreaHeight);
+        this.ctx.stroke();
+
+        // Draw penalty spots (12 yards = 11m from goal line)
+        const penaltySpotDistance = pitchWidth * 0.11;
+        
         // Left penalty spot
-        this.ctx.arc(margin + penaltySpotDistance, midY, 2, 0, Math.PI * 2);
-        // Right penalty spot
-        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, midY, 2, 0, Math.PI * 2);
+        this.ctx.beginPath();
+        this.ctx.arc(margin + penaltySpotDistance, centerY, 3, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Penalty arcs
+        // Right penalty spot
+        this.ctx.beginPath();
+        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, centerY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Draw penalty arcs
+        const penaltyArcRadius = centerCircleRadius;
+        
         // Left penalty arc
         this.ctx.beginPath();
-        this.ctx.arc(
-            margin + penaltySpotDistance,
-            midY,
-            centerCircleRadius,
-            -0.3 * Math.PI,
-            0.3 * Math.PI
-        );
+        this.ctx.arc(margin + penaltySpotDistance, centerY, penaltyArcRadius, -Math.PI/6, Math.PI/6);
         this.ctx.stroke();
 
         // Right penalty arc
         this.ctx.beginPath();
-        this.ctx.arc(
-            this.canvas.width - margin - penaltySpotDistance,
-            midY,
-            centerCircleRadius,
-            0.7 * Math.PI,
-            1.3 * Math.PI
-        );
+        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, centerY, penaltyArcRadius, Math.PI - Math.PI/6, Math.PI + Math.PI/6);
         this.ctx.stroke();
     }
 
@@ -387,7 +359,7 @@ class Game {
             const offset = (scaledSize - this.gridSize) / 2;
 
             if (i === 0) {
-            // Draw head
+                // Draw head
                 const headImage = this.snake.getHeadImage();
                 this.ctx.drawImage(
                     headImage,
@@ -434,11 +406,10 @@ class Game {
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
 
-            // Show and position restart button
+            // Show restart button only when game is over
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'block';
-                restartBtn.style.top = `${this.canvas.height / 2 + 40}px`;
             }
         }
     }
