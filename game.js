@@ -83,6 +83,13 @@ class Game {
         this.frameCount = 0;
         console.log('Starting game loop...');
         requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+
+        this.ffpImage = new Image();
+        this.ffpImage.src = 'FFP.png';
+        this.ffp = null;
+        this.ffpSize = 30; // Size of the FFP icon
+        this.ffpSpawnInterval = 10000; // Spawn every 10 seconds
+        this.lastFfpSpawn = 0;
     }
 
     resizeCanvas() {
@@ -255,6 +262,9 @@ class Game {
         
         // Show character selection
         this.setupCharacterSelection();
+
+        this.ffp = null;
+        this.lastFfpSpawn = 0;
     }
 
     startGame() {
@@ -424,6 +434,17 @@ class Game {
             this.gridSize * 1.2
         );
 
+        // Draw FFP if it exists
+        if (this.ffp && this.ffpImage.complete) {
+            this.ctx.drawImage(
+                this.ffpImage,
+                this.ffp.x,
+                this.ffp.y,
+                this.ffpSize,
+                this.ffpSize
+            );
+        }
+
         // Draw game over
         if (this.gameOver) {
             // Semi-transparent black overlay
@@ -508,6 +529,34 @@ class Game {
             this.draw();
             this.lastRenderTime = currentTime;
             this.frameCount++;
+        }
+
+        // Handle FFP spawning
+        if (!this.ffp && currentTime - this.lastFfpSpawn > this.ffpSpawnInterval) {
+            this.generateFfp();
+            this.lastFfpSpawn = currentTime;
+        }
+
+        if (!this.gameOver) {
+            // Update snake position
+            this.snake.move();
+
+            // Check collisions
+            if (this.checkCollision()) {
+                this.gameOver = true;
+                return;
+            }
+
+            // Check food collision
+            if (this.checkFoodCollision()) {
+                this.score += 10;
+                this.updateScore();
+                this.food = this.generateFood();
+                this.snake.grow();
+            }
+
+            // Check FFP collision
+            this.checkFfpCollision();
         }
 
         this.animationFrameId = requestAnimationFrame((time) => this.gameLoop(time));
@@ -596,6 +645,55 @@ class Game {
         img.onerror = () => console.error(`Error loading image: ${src}`);
         img.src = src;
         return img;
+    }
+
+    generateFfp() {
+        const gridSize = this.gridSize;
+        let x, y;
+        do {
+            x = Math.floor(Math.random() * (this.canvas.width / gridSize)) * gridSize;
+            y = Math.floor(Math.random() * (this.canvas.height / gridSize)) * gridSize;
+        } while (this.isPositionOccupied(x, y));
+
+        this.ffp = { x, y };
+    }
+
+    isPositionOccupied(x, y) {
+        // Check if position overlaps with snake
+        for (const segment of this.snake.body) {
+            if (segment.x === x && segment.y === y) return true;
+        }
+        // Check if position overlaps with food
+        if (this.food && this.food.x === x && this.food.y === y) return true;
+        return false;
+    }
+
+    checkFfpCollision() {
+        if (!this.ffp) return false;
+        
+        const head = this.snake.body[0];
+        if (head.x === this.ffp.x && head.y === this.ffp.y) {
+            // Apply 50% penalty
+            this.score = Math.floor(this.score * 0.5);
+            this.updateScore();
+            this.ffp = null; // Remove FFP item
+            return true;
+        }
+        return false;
+    }
+
+    checkCollision() {
+        // Implement collision checking logic
+        return false; // Placeholder, actual implementation needed
+    }
+
+    checkFoodCollision() {
+        // Implement food collision checking logic
+        return false; // Placeholder, actual implementation needed
+    }
+
+    updateScore() {
+        // Implement score update logic
     }
 }
 
@@ -717,5 +815,9 @@ class Snake {
             segment.x = Math.floor(segment.x / this.gridSize) * this.gridSize;
             segment.y = Math.floor(segment.y / this.gridSize) * this.gridSize;
         });
+    }
+
+    grow() {
+        // Implement grow logic
     }
 } 
