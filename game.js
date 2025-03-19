@@ -213,12 +213,6 @@ class Game {
         if (!scoreElement) {
             scoreElement = document.createElement('div');
             scoreElement.id = 'score';
-            scoreElement.style.position = 'absolute';
-            scoreElement.style.top = '20px';
-            scoreElement.style.left = '20px';
-            scoreElement.style.color = 'white';
-            scoreElement.style.fontSize = '24px';
-            scoreElement.style.zIndex = '10';
             document.getElementById('game-container').appendChild(scoreElement);
         }
         scoreElement.textContent = 'Transfer War Chest: £0';
