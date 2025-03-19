@@ -87,9 +87,13 @@ class Game {
         this.ffpImage = new Image();
         this.ffpImage.src = 'FFP.png';
         this.ffp = null;
-        this.ffpSize = 30; // Size of the FFP icon
-        this.ffpSpawnInterval = 10000; // Spawn every 10 seconds
+        this.ffpSize = this.gridSize * 2; // Size increased to 2x2 grid
+        this.ffpSpawnInterval = 10000; // Check every 10 seconds
+        this.ffpLifespan = 30000; // 30 seconds lifespan
+        this.ffpFadeDuration = 2000; // 2 second fade
         this.lastFfpSpawn = 0;
+        this.ffpSpawnTime = 0; // Track when FFP appeared
+        this.ffpOpacity = 1; // For fade effect
     }
 
     resizeCanvas() {
@@ -436,13 +440,30 @@ class Game {
 
         // Draw FFP if it exists
         if (this.ffp && this.ffpImage.complete) {
-            this.ctx.drawImage(
-                this.ffpImage,
-                this.ffp.x,
-                this.ffp.y,
-                this.ffpSize,
-                this.ffpSize
-            );
+            const currentTime = performance.now();
+            const timeAlive = currentTime - this.ffpSpawnTime;
+            
+            // Start fade if approaching lifespan
+            if (timeAlive > this.ffpLifespan - this.ffpFadeDuration) {
+                this.ffpOpacity = Math.max(0, 1 - (timeAlive - (this.ffpLifespan - this.ffpFadeDuration)) / this.ffpFadeDuration);
+            }
+            
+            // Remove FFP if lifespan exceeded
+            if (timeAlive >= this.ffpLifespan) {
+                this.ffp = null;
+                this.lastFfpSpawn = currentTime;
+            } else {
+                // Draw FFP with current opacity
+                this.ctx.globalAlpha = this.ffpOpacity;
+                this.ctx.drawImage(
+                    this.ffpImage,
+                    this.ffp.x,
+                    this.ffp.y,
+                    this.ffpSize,
+                    this.ffpSize
+                );
+                this.ctx.globalAlpha = 1;
+            }
         }
 
         // Draw game over
@@ -528,7 +549,9 @@ class Game {
             // Handle FFP spawning
             if (!this.ffp && currentTime - this.lastFfpSpawn > this.ffpSpawnInterval) {
                 this.generateFfp();
-                this.lastFfpSpawn = currentTime;
+                if (!this.ffp) { // If FFP didn't spawn (50% chance), update last spawn time
+                    this.lastFfpSpawn = currentTime;
+                }
             }
 
             if (!this.gameOver) {
@@ -631,23 +654,46 @@ class Game {
     }
 
     generateFfp() {
-        const gridSize = this.gridSize;
-        let x, y;
-        do {
-            x = Math.floor(Math.random() * (this.canvas.width / gridSize)) * gridSize;
-            y = Math.floor(Math.random() * (this.canvas.height / gridSize)) * gridSize;
-        } while (this.isPositionOccupied(x, y));
+        // Only spawn with 50% chance
+        if (Math.random() < 0.5) {
+            const gridSize = this.gridSize;
+            let x, y;
+            do {
+                // Ensure FFP stays within bounds considering its 2x2 size
+                x = Math.floor(Math.random() * ((this.canvas.width / gridSize) - 2)) * gridSize;
+                y = Math.floor(Math.random() * ((this.canvas.height / gridSize) - 2)) * gridSize;
+            } while (this.isPositionOccupied(x, y, 2, 2)); // Check 2x2 area
 
-        this.ffp = { x, y };
+            this.ffp = { x, y };
+            this.ffpSpawnTime = performance.now();
+            this.ffpOpacity = 1;
+        }
     }
 
-    isPositionOccupied(x, y) {
-        // Check if position overlaps with snake
-        for (const segment of this.snake.body) {
-            if (segment.x === x && segment.y === y) return true;
+    isPositionOccupied(x, y, width = 1, height = 1) {
+        // Check if any part of the area is occupied
+        for (let dx = 0; dx < width; dx++) {
+            for (let dy = 0; dy < height; dy++) {
+                const checkX = x + (dx * this.gridSize);
+                const checkY = y + (dy * this.gridSize);
+                
+                // Check snake collision
+                for (const segment of this.snake.body) {
+                    const segX = segment.x * this.gridSize;
+                    const segY = segment.y * this.gridSize;
+                    if (segX === checkX && segY === checkY) return true;
+                }
+                
+                // Check food collision
+                if (this.food) {
+                    const foodX = this.food.x * this.gridSize;
+                    const foodY = this.food.y * this.gridSize;
+                    if (foodX === checkX && foodY === checkY) return true;
+                    // Check second cell of food
+                    if (foodX + this.gridSize === checkX && foodY === checkY) return true;
+                }
+            }
         }
-        // Check if position overlaps with food
-        if (this.food && this.food.x === x && this.food.y === y) return true;
         return false;
     }
 
@@ -655,7 +701,12 @@ class Game {
         if (!this.ffp) return false;
         
         const head = this.snake.body[0];
-        if (head.x === this.ffp.x && head.y === this.ffp.y) {
+        const headX = head.x * this.gridSize;
+        const headY = head.y * this.gridSize;
+        
+        // Check if head is within the 2x2 FFP area
+        if (headX >= this.ffp.x && headX < this.ffp.x + (this.gridSize * 2) &&
+            headY >= this.ffp.y && headY < this.ffp.y + (this.gridSize * 2)) {
             // Apply 50% penalty
             this.score = Math.floor(this.score * 0.5);
             this.updateScore();
