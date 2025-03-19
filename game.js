@@ -365,10 +365,12 @@ class Game {
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
 
-            // Restart instruction
-            this.ctx.fillStyle = '#FFD700';
-            this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
+            // Restart instruction (only show on desktop)
+            if (window.innerWidth > 768) {
+                this.ctx.fillStyle = '#FFD700';
+                this.ctx.font = '24px Arial';
+                this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
+            }
         }
     }
 
@@ -471,6 +473,7 @@ class Game {
         const downBtn = document.getElementById('down-btn');
         const leftBtn = document.getElementById('left-btn');
         const rightBtn = document.getElementById('right-btn');
+        const restartBtn = document.getElementById('restart-btn');
 
         const handleTouch = (direction) => {
             if (this.gameOver) return;
@@ -495,6 +498,13 @@ class Game {
         rightBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             handleTouch('right');
+        });
+
+        // Restart button
+        restartBtn.addEventListener('click', () => {
+            if (this.gameOver) {
+                this.resetGame();
+            }
         });
     }
 
