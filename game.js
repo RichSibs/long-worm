@@ -229,15 +229,18 @@ class Game {
         if (restartBtn) {
             restartBtn.style.display = 'none';
         }
-        
-        // Create score element if it doesn't exist
-        let scoreElement = document.getElementById('score');
-        if (!scoreElement) {
-            scoreElement = document.createElement('div');
-            scoreElement.id = 'score';
-            document.getElementById('game-container').appendChild(scoreElement);
+
+        // Hide score and controls
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) {
+            scoreElement.style.display = 'none';
+            scoreElement.textContent = 'Transfer War Chest: £0';
         }
-        scoreElement.textContent = 'Transfer War Chest: £0';
+
+        const controls = document.querySelector('.controls');
+        if (controls) {
+            controls.style.display = 'none';
+        }
         
         // Show character selection
         this.setupCharacterSelection();
@@ -246,6 +249,21 @@ class Game {
     startGame() {
         this.snake = new Snake(this.gridSize, this.characterType, this.images);
         this.food = this.generateFood();
+        
+        // Show score and controls
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) {
+            scoreElement.style.display = 'block';
+        }
+
+        // Show controls on mobile
+        if (window.innerWidth <= 768) {
+            const controls = document.querySelector('.controls');
+            if (controls) {
+                controls.style.display = 'flex';
+            }
+        }
+
         this.gameLoop();
     }
 
