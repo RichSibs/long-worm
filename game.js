@@ -33,8 +33,8 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         this.pitchSvg = document.getElementById('pitch-svg');
         this.gameArea = document.getElementById('game-area');
-        
-        // Load images
+
+// Load images
         console.log('Loading images...');
         this.images = {
             [INVESTMENT_FUND]: {
@@ -251,114 +251,123 @@ class Game {
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 2;
 
-        // Calculate dimensions based on grid size
+        // Calculate base unit for scaling (using 1.5:1 ratio)
         const margin = this.gridSize;
         const pitchWidth = this.canvas.width - 2 * margin;
-        const pitchHeight = this.canvas.height - 2 * margin;
-        const penaltyWidth = 6 * this.gridSize;
-        const penaltyHeight = Math.floor(pitchHeight * 0.4); // 40% of pitch height
-        const penaltyY = (this.canvas.height - penaltyHeight) / 2;
-        const centerCircleRadius = 3 * this.gridSize;
-        const penaltyArcRadius = 2 * this.gridSize;
+        const pitchHeight = Math.floor(pitchWidth * 1.5);  // Standard 1.5:1 ratio
+        const yOffset = (this.canvas.height - pitchHeight) / 2;
+
+        // Scale factors based on standard pitch dimensions
+        // Standard width is 45-90m, we'll use 70m as reference
+        const unit = pitchWidth / 70;  // One meter in pixels
+
+        // Calculate key dimensions
+        const penaltyAreaWidth = 16.5 * unit;  // 16.5m (18 yards)
+        const penaltyAreaLength = 40.3 * unit;  // 40.3m (44 yards)
+        const goalAreaWidth = 5.5 * unit;      // 5.5m (6 yards)
+        const goalAreaLength = 18.3 * unit;    // 18.3m (20 yards)
+        const centerCircleRadius = 9.15 * unit; // 9.15m (10 yards)
+        const penaltySpotDistance = 11 * unit; // 11m (12 yards)
+        const goalWidth = 2 * unit;            // Goal depth
 
         // Main pitch outline
-        this.ctx.strokeRect(margin, margin, pitchWidth, pitchHeight);
+        this.ctx.strokeRect(margin, yOffset, pitchWidth, pitchHeight);
 
         // Center line
         const midX = this.canvas.width / 2;
+        const midY = this.canvas.height / 2;
         this.ctx.beginPath();
-        this.ctx.moveTo(midX, margin);
-        this.ctx.lineTo(midX, this.canvas.height - margin);
+        this.ctx.moveTo(midX, yOffset);
+        this.ctx.lineTo(midX, yOffset + pitchHeight);
         this.ctx.stroke();
 
         // Center circle
         this.ctx.beginPath();
-        this.ctx.arc(
-            midX,
-            this.canvas.height / 2,
-            centerCircleRadius,
-            0,
-            Math.PI * 2
-        );
+        this.ctx.arc(midX, midY, centerCircleRadius, 0, Math.PI * 2);
         this.ctx.stroke();
 
         // Center spot
         this.ctx.beginPath();
-        this.ctx.arc(midX, this.canvas.height / 2, 2, 0, Math.PI * 2);
+        this.ctx.arc(midX, midY, 2, 0, Math.PI * 2);
         this.ctx.fill();
 
         // Left penalty area
-        this.ctx.strokeRect(margin, penaltyY, penaltyWidth, penaltyHeight);
-        
-        // Right penalty area
         this.ctx.strokeRect(
-            this.canvas.width - margin - penaltyWidth,
-            penaltyY,
-            penaltyWidth,
-            penaltyHeight
+            margin,
+            midY - penaltyAreaLength/2,
+            penaltyAreaWidth,
+            penaltyAreaLength
         );
 
+        // Right penalty area
+        this.ctx.strokeRect(
+            this.canvas.width - margin - penaltyAreaWidth,
+            midY - penaltyAreaLength/2,
+            penaltyAreaWidth,
+            penaltyAreaLength
+        );
+
+        // Left goal area
+        this.ctx.strokeRect(
+            margin,
+            midY - goalAreaLength/2,
+            goalAreaWidth,
+            goalAreaLength
+        );
+
+        // Right goal area
+        this.ctx.strokeRect(
+            this.canvas.width - margin - goalAreaWidth,
+            midY - goalAreaLength/2,
+            goalAreaWidth,
+            goalAreaLength
+        );
+
+        // Left goal
+        this.ctx.strokeRect(
+            margin - goalWidth,
+            midY - goalAreaLength/4,
+            goalWidth,
+            goalAreaLength/2
+        );
+
+        // Right goal
+        this.ctx.strokeRect(
+            this.canvas.width - margin,
+            midY - goalAreaLength/4,
+            goalWidth,
+            goalAreaLength/2
+        );
+
+        // Penalty spots
+        this.ctx.beginPath();
+        // Left penalty spot
+        this.ctx.arc(margin + penaltySpotDistance, midY, 2, 0, Math.PI * 2);
+        // Right penalty spot
+        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, midY, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Penalty arcs
         // Left penalty arc
         this.ctx.beginPath();
         this.ctx.arc(
-            margin + penaltyWidth,
-            this.canvas.height / 2,
-            penaltyArcRadius,
-            -Math.PI / 3,
-            Math.PI / 3
+            margin + penaltySpotDistance,
+            midY,
+            centerCircleRadius,
+            -0.3 * Math.PI,
+            0.3 * Math.PI
         );
         this.ctx.stroke();
 
         // Right penalty arc
         this.ctx.beginPath();
         this.ctx.arc(
-            this.canvas.width - margin - penaltyWidth,
-            this.canvas.height / 2,
-            penaltyArcRadius,
-            Math.PI * 2/3,
-            -Math.PI * 2/3
+            this.canvas.width - margin - penaltySpotDistance,
+            midY,
+            centerCircleRadius,
+            0.7 * Math.PI,
+            1.3 * Math.PI
         );
-        this.ctx.stroke();
-
-        // Left goal
-        this.ctx.strokeRect(
-            0,
-            this.canvas.height / 2 - this.gridSize * 2,
-            margin,
-            this.gridSize * 4
-        );
-
-        // Right goal
-        this.ctx.strokeRect(
-            this.canvas.width - margin,
-            this.canvas.height / 2 - this.gridSize * 2,
-            margin,
-            this.gridSize * 4
-        );
-
-        // Draw goal nets (diagonal lines)
-        this.ctx.beginPath();
-        this.ctx.lineWidth = 1;
-
-        // Left goal net
-        for (let i = 0; i <= 8; i++) {
-            // Vertical lines
-            this.ctx.moveTo(i * (margin / 8), this.canvas.height / 2 - this.gridSize * 2);
-            this.ctx.lineTo(i * (margin / 8), this.canvas.height / 2 + this.gridSize * 2);
-            // Horizontal lines
-            this.ctx.moveTo(0, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
-            this.ctx.lineTo(margin, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
-        }
-
-        // Right goal net
-        for (let i = 0; i <= 8; i++) {
-            // Vertical lines
-            this.ctx.moveTo(this.canvas.width - margin + i * (margin / 8), this.canvas.height / 2 - this.gridSize * 2);
-            this.ctx.lineTo(this.canvas.width - margin + i * (margin / 8), this.canvas.height / 2 + this.gridSize * 2);
-            // Horizontal lines
-            this.ctx.moveTo(this.canvas.width - margin, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
-            this.ctx.lineTo(this.canvas.width, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
-        }
         this.ctx.stroke();
     }
 
@@ -378,7 +387,7 @@ class Game {
             const offset = (scaledSize - this.gridSize) / 2;
 
             if (i === 0) {
-                // Draw head
+            // Draw head
                 const headImage = this.snake.getHeadImage();
                 this.ctx.drawImage(
                     headImage,
@@ -437,7 +446,7 @@ class Game {
     update() {
         if (this.gameOver) return;
 
-        // Move snake
+    // Move snake
         this.snake.move();
         
         // Update food animation
@@ -451,8 +460,8 @@ class Game {
             head.y < 0 || head.y >= this.canvas.height / this.gridSize) {
             this.gameOver = true;
             this.saveScore();
-            return;
-        }
+        return;
+    }
 
         // Self collision
         for (let i = 1; i < this.snake.body.length; i++) {
@@ -505,28 +514,28 @@ class Game {
                 if (e.key.toLowerCase() === 'r') {
                     this.resetGame();
                 }
-                return;
-            }
-            
+        return;
+    }
+
             switch(e.key) {
-                case 'ArrowUp':
+        case 'ArrowUp':
                     e.preventDefault();
                     this.snake.setDirection('up');
-                    break;
-                case 'ArrowDown':
+            break;
+        case 'ArrowDown':
                     e.preventDefault();
                     this.snake.setDirection('down');
-                    break;
-                case 'ArrowLeft':
+            break;
+        case 'ArrowLeft':
                     e.preventDefault();
                     this.snake.setDirection('left');
-                    break;
-                case 'ArrowRight':
+            break;
+        case 'ArrowRight':
                     e.preventDefault();
                     this.snake.setDirection('right');
-                    break;
-            }
-        });
+            break;
+    }
+});
 
         // Touch controls
         const upBtn = document.getElementById('up-btn');
