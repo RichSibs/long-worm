@@ -1,67 +1,65 @@
 // Game constants
-const GRID_SIZE = 40;
-const CELL_SIZE = 20;
-const GAME_WIDTH = 1200;
-const GAME_HEIGHT = 800;
+const GRID_SIZE = 60;
+const CELL_SIZE = 30;
+const GAME_WIDTH = 900;
+const GAME_HEIGHT = 540;
 const GRID_WIDTH = GAME_WIDTH / CELL_SIZE;
 const GRID_HEIGHT = GAME_HEIGHT / CELL_SIZE;
 
 const INVESTMENT_FUND = "investment";
 const FOOTBALL_OWNER = "football";
 
-// Game state
-let snake = [];
-let food = {};
-let direction = 'RIGHT';
-let score = 0;
-let gameOver = false;
-let gameStarted = false;
-let highScores = [];
-
-// Canvas setup
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
-
-// Load images
-const headRight = new Image();
-const headLeft = new Image();
-const headUp = new Image();
-const headDown = new Image();
-const foodImg = new Image();
-
-headRight.src = 'bald_man_right.png';
-headLeft.src = 'bald_man_left.png';
-headUp.src = 'bald_man_up.png';
-headDown.src = 'bald_man_down.png';
-foodImg.src = 'five_pound_note.png';
+// Initialize game when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, creating game instance...');
+    new Game();
+});
 
 class Game {
     constructor() {
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = GAME_WIDTH;
-        this.canvas.height = GAME_HEIGHT;
-        this.gridSize = GRID_SIZE;
-        this.score = 0;
-        this.gameOver = false;
-        this.speed = 50; // Slower initial speed
-        this.lastRenderTime = 0;
-        this.characterType = null;
-        this.animationFrameId = null;
-        this.highScores = [];
-        this.frameCount = 0;
+        console.log('Game constructor called');
+        this.initialize();
+    }
 
-        // Load all images
+    initialize() {
+        console.log('Initializing game...');
+        this.canvas = document.getElementById('game-canvas');
+        if (!this.canvas) {
+            console.error('Canvas element not found!');
+            return;
+        }
+        console.log('Canvas found:', this.canvas);
+
+        this.ctx = this.canvas.getContext('2d');
+        this.pitchSvg = document.getElementById('pitch-svg');
+        this.gameArea = document.getElementById('game-area');
+
+        // Add game title
+        const gameTitle = document.createElement('div');
+        gameTitle.id = 'game-title';
+        
+        const line1 = document.createElement('span');
+        line1.className = 'line1';
+        line1.textContent = 'LONG WORM';
+        
+        const line2 = document.createElement('span');
+        line2.className = 'line2';
+        line2.textContent = 'Capitalist Football Edition';
+        
+        gameTitle.appendChild(line1);
+        gameTitle.appendChild(line2);
+        document.getElementById('game-container').appendChild(gameTitle);
+
+// Load images
+        console.log('Loading images...');
         this.images = {
-            investment: {
+            [INVESTMENT_FUND]: {
                 right: this.loadImage('bald_man_right.png'),
                 left: this.loadImage('bald_man_left.png'),
                 up: this.loadImage('bald_man_up.png'),
                 down: this.loadImage('bald_man_down.png')
             },
-            football: {
+            [FOOTBALL_OWNER]: {
                 right: this.loadImage('AF_facing_right.png'),
                 left: this.loadImage('AF_facing_left.png'),
                 up: this.loadImage('AF_facing_up.png'),
@@ -69,43 +67,92 @@ class Game {
             },
             food: this.loadImage('five_pound_note.png')
         };
+        
+        // Set initial canvas size
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // Initialize game state
+        this.resetGame();
+        
+        // Setup controls
+        this.setupControls();
+        
+        // Start game loop
+        this.lastTime = 0;
+        this.frameCount = 0;
+        console.log('Starting game loop...');
+        requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+    }
 
-        // Character selection screen elements
-        this.setupCharacterSelection();
-        this.loadHighScores();
+    resizeCanvas() {
+        const containerWidth = this.gameArea.clientWidth;
+        const containerHeight = this.gameArea.clientHeight;
+        
+        // Set canvas size to match container
+        this.canvas.width = containerWidth;
+        this.canvas.height = containerHeight;
+        
+        // Update grid size based on container dimensions
+        this.gridSize = Math.min(containerWidth, containerHeight) / 15;
+        
+        // Update snake and food positions if game is running
+        if (this.snake) {
+            this.snake.resize(this.gridSize);
+        }
+        if (this.food) {
+            this.food.resize(this.gridSize);
+        }
     }
 
     setupCharacterSelection() {
-        const selectionDiv = document.getElementById('character-select');
-        if (!selectionDiv) {
-            const div = document.createElement('div');
-            div.id = 'character-select';
-            div.style.textAlign = 'center';
-            div.style.marginBottom = '20px';
-            
-            const title = document.createElement('h2');
-            title.textContent = 'Choose Your Character';
-            title.style.color = '#FFD700';
-            div.appendChild(title);
-
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.justifyContent = 'center';
-            buttonContainer.style.gap = '40px';
-
-            const investmentBtn = this.createCharacterButton(INVESTMENT_FUND, 'Investment Fund', 'bald_man_left.png');
-            const footballBtn = this.createCharacterButton(FOOTBALL_OWNER, 'Football Team Owner', 'AF_facing_left.png');
-
-            buttonContainer.appendChild(investmentBtn);
-            buttonContainer.appendChild(footballBtn);
-            div.appendChild(buttonContainer);
-
-            document.getElementById('game-container').insertBefore(div, this.canvas);
+        // Remove existing character select if it exists
+        const existingSelect = document.getElementById('character-select');
+        if (existingSelect) {
+            existingSelect.remove();
         }
+
+        // Create new character select
+        const div = document.createElement('div');
+        div.id = 'character-select';
+        div.style.position = 'absolute';
+        div.style.top = '50%';
+        div.style.left = '50%';
+        div.style.transform = 'translate(-50%, -50%)';
+        div.style.zIndex = '1000';
+        div.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        div.style.padding = '20px';
+        div.style.borderRadius = '10px';
+        div.style.textAlign = 'center';
+        
+        const title = document.createElement('h2');
+        title.textContent = 'Choose Your Chairman';
+        title.style.color = '#FFD700';
+        div.appendChild(title);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'center';
+        buttonContainer.style.gap = '40px';
+
+        const investmentBtn = this.createCharacterButton(INVESTMENT_FUND, 'Investment Fund', 'bald_man_left.png');
+        const footballBtn = this.createCharacterButton(FOOTBALL_OWNER, 'Football Team Owner', 'AF_facing_left.png');
+
+        buttonContainer.appendChild(investmentBtn);
+        buttonContainer.appendChild(footballBtn);
+        div.appendChild(buttonContainer);
+
+        // Add to game container
+        const gameContainer = document.getElementById('game-container');
+        gameContainer.appendChild(div);
+
+        // Log to verify creation
+        console.log('Character selection created');
     }
 
     createCharacterButton(type, text, image) {
         const container = document.createElement('div');
+        container.className = 'character-button';
         container.style.cursor = 'pointer';
         container.style.padding = '10px';
         container.style.border = '2px solid white';
@@ -138,6 +185,7 @@ class Game {
         });
 
         container.addEventListener('click', () => {
+            console.log('Character selected:', type);
             this.selectCharacter(type);
         });
 
@@ -175,17 +223,28 @@ class Game {
         this.speed = 50; // Reset to initial slower speed
         this.lastRenderTime = 0;
         this.characterType = null;
-        const selectionDiv = document.getElementById('character-select');
-        if (selectionDiv) {
-            selectionDiv.style.display = 'block';
-        } else {
-            this.setupCharacterSelection();
+        
+        // Hide restart button
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) {
+            restartBtn.style.display = 'none';
         }
-        document.getElementById('score').textContent = 'Score: £0';
+        
+        // Create score element if it doesn't exist
+        let scoreElement = document.getElementById('score');
+        if (!scoreElement) {
+            scoreElement = document.createElement('div');
+            scoreElement.id = 'score';
+            document.getElementById('game-container').appendChild(scoreElement);
+        }
+        scoreElement.textContent = 'Transfer War Chest: £0';
+        
+        // Show character selection
+        this.setupCharacterSelection();
     }
 
     startGame() {
-        this.snake = new Snake(this.characterType, this.images);
+        this.snake = new Snake(this.gridSize, this.characterType, this.images);
         this.food = this.generateFood();
         this.gameLoop();
     }
@@ -206,57 +265,82 @@ class Game {
     }
 
     drawPitch() {
-        // Draw alternating stripes
-        const stripeWidth = this.gridSize * 2;
-        for (let x = 0; x < this.canvas.width; x += stripeWidth) {
-            this.ctx.fillStyle = (x / stripeWidth) % 2 === 0 ? '#3a702f' : '#2d5a27';
-            this.ctx.fillRect(x, 0, stripeWidth, this.canvas.height);
-        }
+        // Draw solid green pitch
+        this.ctx.fillStyle = '#3a702f';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw pitch markings
-        this.ctx.strokeStyle = '#ffffff';
+        // Set line style for pitch markings
+        this.ctx.strokeStyle = 'white';
         this.ctx.lineWidth = 2;
 
-        // Outline
-        this.ctx.strokeRect(
-            this.gridSize, 
-            this.gridSize, 
-            this.canvas.width - 2 * this.gridSize, 
-            this.canvas.height - 2 * this.gridSize
-        );
+        // Calculate pitch dimensions with margins (using standard 1.5:1 ratio)
+        const margin = 20;
+        const pitchWidth = this.canvas.width - (margin * 2);
+        const pitchHeight = this.canvas.height - (margin * 2);
 
-        // Center line
-        const midX = this.canvas.width / 2;
+        // Draw main pitch outline
         this.ctx.beginPath();
-        this.ctx.moveTo(midX, this.gridSize);
-        this.ctx.lineTo(midX, this.canvas.height - this.gridSize);
+        this.ctx.rect(margin, margin, pitchWidth, pitchHeight);
         this.ctx.stroke();
 
-        // Center circle
+        // Draw center line
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
         this.ctx.beginPath();
-        this.ctx.arc(
-            this.canvas.width / 2,
-            this.canvas.height / 2,
-            3 * this.gridSize,
-            0,
-            Math.PI * 2
-        );
+        this.ctx.moveTo(centerX, margin);
+        this.ctx.lineTo(centerX, this.canvas.height - margin);
         this.ctx.stroke();
 
-        // Penalty areas
-        const penaltyWidth = 6 * this.gridSize;
-        const penaltyHeight = 14 * this.gridSize;
-        const penaltyY = (this.canvas.height - penaltyHeight) / 2;
+        // Draw center circle (10 yards = 9.15m radius)
+        const centerCircleRadius = Math.min(pitchWidth, pitchHeight) * 0.1;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, centerCircleRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Draw center spot
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Draw penalty areas (18 yard box)
+        const penaltyAreaWidth = pitchWidth * 0.165; // 18 yards = 16.5m
+        const penaltyAreaHeight = pitchHeight * 0.44; // Matches reference images
 
         // Left penalty area
-        this.ctx.strokeRect(this.gridSize, penaltyY, penaltyWidth, penaltyHeight);
+        this.ctx.beginPath();
+        this.ctx.rect(margin, (this.canvas.height - penaltyAreaHeight) / 2, penaltyAreaWidth, penaltyAreaHeight);
+        this.ctx.stroke();
+
         // Right penalty area
-        this.ctx.strokeRect(
-            this.canvas.width - this.gridSize - penaltyWidth,
-            penaltyY,
-            penaltyWidth,
-            penaltyHeight
-        );
+        this.ctx.beginPath();
+        this.ctx.rect(this.canvas.width - margin - penaltyAreaWidth, (this.canvas.height - penaltyAreaHeight) / 2, penaltyAreaWidth, penaltyAreaHeight);
+        this.ctx.stroke();
+
+        // Draw penalty spots (12 yards = 11m from goal line)
+        const penaltySpotDistance = pitchWidth * 0.11;
+        
+        // Left penalty spot
+        this.ctx.beginPath();
+        this.ctx.arc(margin + penaltySpotDistance, centerY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Right penalty spot
+        this.ctx.beginPath();
+        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, centerY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Draw penalty arcs
+        const penaltyArcRadius = centerCircleRadius;
+        
+        // Left penalty arc
+        this.ctx.beginPath();
+        this.ctx.arc(margin + penaltySpotDistance, centerY, penaltyArcRadius, -Math.PI/6, Math.PI/6);
+        this.ctx.stroke();
+
+        // Right penalty arc
+        this.ctx.beginPath();
+        this.ctx.arc(this.canvas.width - margin - penaltySpotDistance, centerY, penaltyArcRadius, Math.PI - Math.PI/6, Math.PI + Math.PI/6);
+        this.ctx.stroke();
     }
 
     draw() {
@@ -281,8 +365,8 @@ class Game {
                     headImage,
                     segment.x * this.gridSize - offset,
                     segment.y * this.gridSize - offset,
-                    scaledSize,
-                    scaledSize
+                    scaledSize * 1.2,
+                    scaledSize * 1.2
                 );
             } else {
                 // Draw body segment
@@ -301,15 +385,9 @@ class Game {
             this.images.food,
             this.food.x * this.gridSize,
             this.food.y * this.gridSize,
-            this.gridSize * 1.8,
-            this.gridSize
+            this.gridSize * 2,
+            this.gridSize * 1.2
         );
-
-        // Draw score
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 36px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText(`£${this.score * 5}`, 10, 40);
 
         // Draw game over
         if (this.gameOver) {
@@ -328,17 +406,18 @@ class Game {
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
 
-            // Restart instruction
-            this.ctx.fillStyle = '#FFD700';
-            this.ctx.font = '24px Arial';
-            this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
+            // Show restart button only when game is over
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'block';
+            }
         }
     }
 
     update() {
         if (this.gameOver) return;
 
-        // Move snake
+    // Move snake
         this.snake.move();
         
         // Update food animation
@@ -352,8 +431,8 @@ class Game {
             head.y < 0 || head.y >= this.canvas.height / this.gridSize) {
             this.gameOver = true;
             this.saveScore();
-            return;
-        }
+        return;
+    }
 
         // Self collision
         for (let i = 1; i < this.snake.body.length; i++) {
@@ -373,7 +452,7 @@ class Game {
             this.snake.segmentScales[0] = this.snake.maxScale;
             this.food = this.generateFood();
             this.score++;
-            document.getElementById('score').textContent = `Score: £${this.score * 5}`;
+            document.getElementById('score').textContent = `Transfer War Chest: £${this.score * 5}`;
             
             // Increase speed every 5 food items by 10%
             if (this.score % 5 === 0) {
@@ -400,68 +479,127 @@ class Game {
     }
 
     setupControls() {
-        document.addEventListener('keydown', (event) => {
-            // Prevent page scrolling with arrow keys
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
-                event.preventDefault();
-            }
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (this.gameOver) {
+                if (e.key.toLowerCase() === 'r') {
+                    this.resetGame();
+                }
+        return;
+    }
 
-            if (this.gameOver && event.code === 'KeyR') {
+            switch(e.key) {
+        case 'ArrowUp':
+                    e.preventDefault();
+                    this.snake.setDirection('up');
+            break;
+        case 'ArrowDown':
+                    e.preventDefault();
+                    this.snake.setDirection('down');
+            break;
+        case 'ArrowLeft':
+                    e.preventDefault();
+                    this.snake.setDirection('left');
+            break;
+        case 'ArrowRight':
+                    e.preventDefault();
+                    this.snake.setDirection('right');
+            break;
+    }
+});
+
+        // Touch controls
+        const upBtn = document.getElementById('up-btn');
+        const downBtn = document.getElementById('down-btn');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const handleTouch = (direction) => {
+            if (this.gameOver) return;
+            this.snake.setDirection(direction);
+        };
+
+        upBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('up');
+        });
+
+        downBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('down');
+        });
+
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('left');
+        });
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('right');
+        });
+
+        // Restart button - handle both click and touch events
+        restartBtn.addEventListener('click', () => {
+            if (this.gameOver) {
                 this.resetGame();
-                return;
             }
+        });
 
-            if (!this.characterType || this.gameOver) return;
-
-            switch(event.code) {
-                case 'ArrowUp':
-                    if (this.snake.direction.y !== 1) {
-                        this.snake.direction = {x: 0, y: -1};
-                    }
-                    break;
-                case 'ArrowDown':
-                    if (this.snake.direction.y !== -1) {
-                        this.snake.direction = {x: 0, y: 1};
-                    }
-                    break;
-                case 'ArrowLeft':
-                    if (this.snake.direction.x !== 1) {
-                        this.snake.direction = {x: -1, y: 0};
-                    }
-                    break;
-                case 'ArrowRight':
-                    if (this.snake.direction.x !== -1) {
-                        this.snake.direction = {x: 1, y: 0};
-                    }
-                    break;
+        restartBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.gameOver) {
+                this.resetGame();
             }
         });
     }
 
     loadImage(src) {
         const img = new Image();
+        img.onload = () => console.log(`Image loaded: ${src}`);
+        img.onerror = () => console.error(`Error loading image: ${src}`);
         img.src = src;
         return img;
     }
 }
 
 class Snake {
-    constructor(characterType, images) {
-        this.body = [{
-            x: Math.floor(GAME_WIDTH / GRID_SIZE / 4),
-            y: Math.floor(GAME_HEIGHT / GRID_SIZE / 2)
-        }];
-        this.direction = {x: 1, y: 0};
+    constructor(gridSize, characterType, images) {
+        this.gridSize = gridSize;
         this.characterType = characterType;
         this.images = images;
+        this.reset();
+        this.animationSpeed = 2; // Faster wave animation
+        this.maxScale = 1.5; // 50% larger
+        this.minScale = 1.0;
+        this.transitionProgress = 0;
+        this.foodPosition = 0;
+        this.segmentScales = [];
         this.grow = false;
-        this.segmentScales = [1.0];  // Track scale of each segment
-        this.foodPosition = -1;  // Track which segment the food is passing through
-        this.animationSpeed = 2; // Control how fast the food moves through segments (reduced from 4 to make it even faster)
-        this.animationCounter = 0;
-        this.transitionProgress = 0; // Track progress of current segment transition
-        this.maxScale = 1.5; // Maximum scale for segments
-        this.minScale = 1.0; // Minimum scale for segments
+    }
+
+    reset() {
+        this.body = [
+            {x: 5, y: 5}
+        ];
+        this.direction = {x: 1, y: 0};
+        this.nextDirection = {x: 1, y: 0};
+        this.segmentScales = [this.minScale];
+    }
+
+    setDirection(direction) {
+        const newDirection = {
+            up: {x: 0, y: -1},
+            down: {x: 0, y: 1},
+            left: {x: -1, y: 0},
+            right: {x: 1, y: 0}
+        }[direction];
+
+        // Prevent 180-degree turns
+        if (this.direction.x !== -newDirection.x || this.direction.y !== -newDirection.y) {
+            this.nextDirection = newDirection;
+        }
     }
 
     getHeadImage() {
@@ -473,6 +611,11 @@ class Snake {
     }
 
     move() {
+        // Apply next direction if it exists
+        if (this.nextDirection) {
+            this.direction = this.nextDirection;
+        }
+
         const head = this.body[0];
         const newHead = {
             x: head.x + this.direction.x,
@@ -532,10 +675,12 @@ class Snake {
             }
         }
     }
-}
 
-// Initialize game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const game = new Game();
-    game.setupControls();
-}); 
+    resize(gridSize) {
+        this.gridSize = gridSize;
+        this.body.forEach(segment => {
+            segment.x = Math.floor(segment.x / this.gridSize) * this.gridSize;
+            segment.y = Math.floor(segment.y / this.gridSize) * this.gridSize;
+        });
+    }
+} 
