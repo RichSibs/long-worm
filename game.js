@@ -9,59 +9,41 @@ const GRID_HEIGHT = GAME_HEIGHT / CELL_SIZE;
 const INVESTMENT_FUND = "investment";
 const FOOTBALL_OWNER = "football";
 
-// Game state
-let snake = [];
-let food = {};
-let direction = 'RIGHT';
-let score = 0;
-let gameOver = false;
-let gameStarted = false;
-let highScores = [];
-
-// Canvas setup
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-canvas.width = GAME_WIDTH;
-canvas.height = GAME_HEIGHT;
-
-// Load images
-const headRight = new Image();
-const headLeft = new Image();
-const headUp = new Image();
-const headDown = new Image();
-const foodImg = new Image();
-
-headRight.src = 'bald_man_right.png';
-headLeft.src = 'bald_man_left.png';
-headUp.src = 'bald_man_up.png';
-headDown.src = 'bald_man_down.png';
-foodImg.src = 'five_pound_note.png';
+// Initialize game when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, creating game instance...');
+    new Game();
+});
 
 class Game {
     constructor() {
-        this.canvas = document.getElementById('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.canvas.width = GAME_WIDTH;
-        this.canvas.height = GAME_HEIGHT;
-        this.gridSize = GRID_SIZE;
-        this.score = 0;
-        this.gameOver = false;
-        this.speed = 50; // Slower initial speed
-        this.lastRenderTime = 0;
-        this.characterType = null;
-        this.animationFrameId = null;
-        this.highScores = [];
-        this.frameCount = 0;
+        console.log('Game constructor called');
+        this.initialize();
+    }
 
-        // Load all images
+    initialize() {
+        console.log('Initializing game...');
+        this.canvas = document.getElementById('game-canvas');
+        if (!this.canvas) {
+            console.error('Canvas element not found!');
+            return;
+        }
+        console.log('Canvas found:', this.canvas);
+
+        this.ctx = this.canvas.getContext('2d');
+        this.pitchSvg = document.getElementById('pitch-svg');
+        this.gameArea = document.getElementById('game-area');
+        
+        // Load images
+        console.log('Loading images...');
         this.images = {
-            investment: {
+            [INVESTMENT_FUND]: {
                 right: this.loadImage('bald_man_right.png'),
                 left: this.loadImage('bald_man_left.png'),
                 up: this.loadImage('bald_man_up.png'),
                 down: this.loadImage('bald_man_down.png')
             },
-            football: {
+            [FOOTBALL_OWNER]: {
                 right: this.loadImage('AF_facing_right.png'),
                 left: this.loadImage('AF_facing_left.png'),
                 up: this.loadImage('AF_facing_up.png'),
@@ -69,43 +51,92 @@ class Game {
             },
             food: this.loadImage('five_pound_note.png')
         };
+        
+        // Set initial canvas size
+        this.resizeCanvas();
+        window.addEventListener('resize', () => this.resizeCanvas());
+        
+        // Initialize game state
+        this.resetGame();
+        
+        // Setup controls
+        this.setupControls();
+        
+        // Start game loop
+        this.lastTime = 0;
+        this.frameCount = 0;
+        console.log('Starting game loop...');
+        requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+    }
 
-        // Character selection screen elements
-        this.setupCharacterSelection();
-        this.loadHighScores();
+    resizeCanvas() {
+        const containerWidth = this.gameArea.clientWidth;
+        const containerHeight = this.gameArea.clientHeight;
+        
+        // Set canvas size to match container
+        this.canvas.width = containerWidth;
+        this.canvas.height = containerHeight;
+        
+        // Update grid size based on container dimensions
+        this.gridSize = Math.min(containerWidth, containerHeight) / 20;
+        
+        // Update snake and food positions if game is running
+        if (this.snake) {
+            this.snake.resize(this.gridSize);
+        }
+        if (this.food) {
+            this.food.resize(this.gridSize);
+        }
     }
 
     setupCharacterSelection() {
-        const selectionDiv = document.getElementById('character-select');
-        if (!selectionDiv) {
-            const div = document.createElement('div');
-            div.id = 'character-select';
-            div.style.textAlign = 'center';
-            div.style.marginBottom = '20px';
-            
-            const title = document.createElement('h2');
-            title.textContent = 'Choose Your Character';
-            title.style.color = '#FFD700';
-            div.appendChild(title);
-
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.justifyContent = 'center';
-            buttonContainer.style.gap = '40px';
-
-            const investmentBtn = this.createCharacterButton(INVESTMENT_FUND, 'Investment Fund', 'bald_man_left.png');
-            const footballBtn = this.createCharacterButton(FOOTBALL_OWNER, 'Football Team Owner', 'AF_facing_left.png');
-
-            buttonContainer.appendChild(investmentBtn);
-            buttonContainer.appendChild(footballBtn);
-            div.appendChild(buttonContainer);
-
-            document.getElementById('game-container').insertBefore(div, this.canvas);
+        // Remove existing character select if it exists
+        const existingSelect = document.getElementById('character-select');
+        if (existingSelect) {
+            existingSelect.remove();
         }
+
+        // Create new character select
+        const div = document.createElement('div');
+        div.id = 'character-select';
+        div.style.position = 'absolute';
+        div.style.top = '50%';
+        div.style.left = '50%';
+        div.style.transform = 'translate(-50%, -50%)';
+        div.style.zIndex = '1000';
+        div.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        div.style.padding = '20px';
+        div.style.borderRadius = '10px';
+        div.style.textAlign = 'center';
+        
+        const title = document.createElement('h2');
+        title.textContent = 'Choose Your Character';
+        title.style.color = '#FFD700';
+        div.appendChild(title);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.justifyContent = 'center';
+        buttonContainer.style.gap = '40px';
+
+        const investmentBtn = this.createCharacterButton(INVESTMENT_FUND, 'Investment Fund', 'bald_man_left.png');
+        const footballBtn = this.createCharacterButton(FOOTBALL_OWNER, 'Football Team Owner', 'AF_facing_left.png');
+
+        buttonContainer.appendChild(investmentBtn);
+        buttonContainer.appendChild(footballBtn);
+        div.appendChild(buttonContainer);
+
+        // Add to game container
+        const gameContainer = document.getElementById('game-container');
+        gameContainer.appendChild(div);
+
+        // Log to verify creation
+        console.log('Character selection created');
     }
 
     createCharacterButton(type, text, image) {
         const container = document.createElement('div');
+        container.className = 'character-button';
         container.style.cursor = 'pointer';
         container.style.padding = '10px';
         container.style.border = '2px solid white';
@@ -138,6 +169,7 @@ class Game {
         });
 
         container.addEventListener('click', () => {
+            console.log('Character selected:', type);
             this.selectCharacter(type);
         });
 
@@ -175,17 +207,28 @@ class Game {
         this.speed = 50; // Reset to initial slower speed
         this.lastRenderTime = 0;
         this.characterType = null;
-        const selectionDiv = document.getElementById('character-select');
-        if (selectionDiv) {
-            selectionDiv.style.display = 'block';
-        } else {
-            this.setupCharacterSelection();
+        
+        // Create score element if it doesn't exist
+        let scoreElement = document.getElementById('score');
+        if (!scoreElement) {
+            scoreElement = document.createElement('div');
+            scoreElement.id = 'score';
+            scoreElement.style.position = 'absolute';
+            scoreElement.style.top = '20px';
+            scoreElement.style.left = '20px';
+            scoreElement.style.color = 'white';
+            scoreElement.style.fontSize = '24px';
+            scoreElement.style.zIndex = '10';
+            document.getElementById('game-container').appendChild(scoreElement);
         }
-        document.getElementById('score').textContent = 'Score: £0';
+        scoreElement.textContent = 'Score: £0';
+        
+        // Show character selection
+        this.setupCharacterSelection();
     }
 
     startGame() {
-        this.snake = new Snake(this.characterType, this.images);
+        this.snake = new Snake(this.gridSize, this.characterType, this.images);
         this.food = this.generateFood();
         this.gameLoop();
     }
@@ -305,12 +348,6 @@ class Game {
             this.gridSize
         );
 
-        // Draw score
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 36px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText(`£${this.score * 5}`, 10, 40);
-
         // Draw game over
         if (this.gameOver) {
             // Semi-transparent black overlay
@@ -400,68 +437,112 @@ class Game {
     }
 
     setupControls() {
-        document.addEventListener('keydown', (event) => {
-            // Prevent page scrolling with arrow keys
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
-                event.preventDefault();
-            }
-
-            if (this.gameOver && event.code === 'KeyR') {
-                this.resetGame();
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            if (this.gameOver) {
+                if (e.key.toLowerCase() === 'r') {
+                    this.resetGame();
+                }
                 return;
             }
-
-            if (!this.characterType || this.gameOver) return;
-
-            switch(event.code) {
+            
+            switch(e.key) {
                 case 'ArrowUp':
-                    if (this.snake.direction.y !== 1) {
-                        this.snake.direction = {x: 0, y: -1};
-                    }
+                    e.preventDefault();
+                    this.snake.setDirection('up');
                     break;
                 case 'ArrowDown':
-                    if (this.snake.direction.y !== -1) {
-                        this.snake.direction = {x: 0, y: 1};
-                    }
+                    e.preventDefault();
+                    this.snake.setDirection('down');
                     break;
                 case 'ArrowLeft':
-                    if (this.snake.direction.x !== 1) {
-                        this.snake.direction = {x: -1, y: 0};
-                    }
+                    e.preventDefault();
+                    this.snake.setDirection('left');
                     break;
                 case 'ArrowRight':
-                    if (this.snake.direction.x !== -1) {
-                        this.snake.direction = {x: 1, y: 0};
-                    }
+                    e.preventDefault();
+                    this.snake.setDirection('right');
                     break;
             }
+        });
+
+        // Touch controls
+        const upBtn = document.getElementById('up-btn');
+        const downBtn = document.getElementById('down-btn');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+
+        const handleTouch = (direction) => {
+            if (this.gameOver) return;
+            this.snake.setDirection(direction);
+        };
+
+        upBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('up');
+        });
+
+        downBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('down');
+        });
+
+        leftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('left');
+        });
+
+        rightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleTouch('right');
         });
     }
 
     loadImage(src) {
         const img = new Image();
+        img.onload = () => console.log(`Image loaded: ${src}`);
+        img.onerror = () => console.error(`Error loading image: ${src}`);
         img.src = src;
         return img;
     }
 }
 
 class Snake {
-    constructor(characterType, images) {
-        this.body = [{
-            x: Math.floor(GAME_WIDTH / GRID_SIZE / 4),
-            y: Math.floor(GAME_HEIGHT / GRID_SIZE / 2)
-        }];
-        this.direction = {x: 1, y: 0};
+    constructor(gridSize, characterType, images) {
+        this.gridSize = gridSize;
         this.characterType = characterType;
         this.images = images;
+        this.reset();
+        this.animationSpeed = 2; // Faster wave animation
+        this.maxScale = 1.5; // 50% larger
+        this.minScale = 1.0;
+        this.transitionProgress = 0;
+        this.foodPosition = 0;
+        this.segmentScales = [];
         this.grow = false;
-        this.segmentScales = [1.0];  // Track scale of each segment
-        this.foodPosition = -1;  // Track which segment the food is passing through
-        this.animationSpeed = 2; // Control how fast the food moves through segments (reduced from 4 to make it even faster)
-        this.animationCounter = 0;
-        this.transitionProgress = 0; // Track progress of current segment transition
-        this.maxScale = 1.5; // Maximum scale for segments
-        this.minScale = 1.0; // Minimum scale for segments
+    }
+
+    reset() {
+        this.body = [
+            {x: 5, y: 5}
+        ];
+        this.direction = {x: 1, y: 0};
+        this.nextDirection = {x: 1, y: 0};
+        this.segmentScales = [this.minScale];
+    }
+
+    setDirection(direction) {
+        const newDirection = {
+            up: {x: 0, y: -1},
+            down: {x: 0, y: 1},
+            left: {x: -1, y: 0},
+            right: {x: 1, y: 0}
+        }[direction];
+
+        // Prevent 180-degree turns
+        if (this.direction.x !== -newDirection.x || this.direction.y !== -newDirection.y) {
+            this.nextDirection = newDirection;
+        }
     }
 
     getHeadImage() {
@@ -473,6 +554,11 @@ class Snake {
     }
 
     move() {
+        // Apply next direction if it exists
+        if (this.nextDirection) {
+            this.direction = this.nextDirection;
+        }
+
         const head = this.body[0];
         const newHead = {
             x: head.x + this.direction.x,
@@ -532,10 +618,12 @@ class Snake {
             }
         }
     }
-}
 
-// Initialize game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const game = new Game();
-    game.setupControls();
-}); 
+    resize(gridSize) {
+        this.gridSize = gridSize;
+        this.body.forEach(segment => {
+            segment.x = Math.floor(segment.x / this.gridSize) * this.gridSize;
+            segment.y = Math.floor(segment.y / this.gridSize) * this.gridSize;
+        });
+    }
+} 
