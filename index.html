@@ -218,15 +218,25 @@
             }
 
             #game-title {
-                top: -60px; /* Adjusted for mobile */
+                top: -60px;
+                width: 90%; /* Add width constraint */
+                white-space: nowrap; /* Prevent line breaks */
+                overflow: hidden; /* Hide overflow */
+                text-overflow: ellipsis; /* Show ellipsis if text overflows */
             }
 
             #game-title .line1 {
-                font-size: 36px;
+                font-size: 32px; /* Reduced from 36px */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             #game-title .line2 {
-                font-size: 18px;
+                font-size: 16px; /* Reduced from 18px */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             #game-area {
