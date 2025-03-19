@@ -356,10 +356,11 @@ class Game {
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
 
-            // Show restart button
+            // Show and position restart button
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'block';
+                restartBtn.style.top = `${this.canvas.height / 2 + 40}px`;
             }
         }
     }
