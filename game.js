@@ -364,13 +364,6 @@ class Game {
             this.ctx.fillStyle = '#ffffff';
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
-
-            // Restart instruction (only show on desktop)
-            if (window.innerWidth > 768) {
-                this.ctx.fillStyle = '#FFD700';
-                this.ctx.font = '24px Arial';
-                this.ctx.fillText('Press R to restart', this.canvas.width / 2, this.canvas.height / 2 + 60);
-            }
         }
     }
 
@@ -500,8 +493,15 @@ class Game {
             handleTouch('right');
         });
 
-        // Restart button
+        // Restart button - handle both click and touch events
         restartBtn.addEventListener('click', () => {
+            if (this.gameOver) {
+                this.resetGame();
+            }
+        });
+
+        restartBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             if (this.gameOver) {
                 this.resetGame();
             }
