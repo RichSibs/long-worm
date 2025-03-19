@@ -249,12 +249,9 @@ class Game {
     }
 
     drawPitch() {
-        // Draw alternating stripes
-        const stripeWidth = this.gridSize * 2;
-        for (let x = 0; x < this.canvas.width; x += stripeWidth) {
-            this.ctx.fillStyle = (x / stripeWidth) % 2 === 0 ? '#3a702f' : '#2d5a27';
-            this.ctx.fillRect(x, 0, stripeWidth, this.canvas.height);
-        }
+        // Draw solid green pitch
+        this.ctx.fillStyle = '#3a702f';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // Draw pitch markings
         this.ctx.strokeStyle = '#ffffff';
@@ -364,6 +361,12 @@ class Game {
             this.ctx.fillStyle = '#ffffff';
             this.ctx.font = 'bold 32px Arial';
             this.ctx.fillText(`Final Score: £${this.score * 5}`, this.canvas.width / 2, this.canvas.height / 2);
+
+            // Show restart button
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'block';
+            }
         }
     }
 
