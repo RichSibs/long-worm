@@ -251,46 +251,115 @@ class Game {
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 2;
 
-        // Outline
-        this.ctx.strokeRect(
-            this.gridSize, 
-            this.gridSize, 
-            this.canvas.width - 2 * this.gridSize, 
-            this.canvas.height - 2 * this.gridSize
-        );
+        // Calculate dimensions based on grid size
+        const margin = this.gridSize;
+        const pitchWidth = this.canvas.width - 2 * margin;
+        const pitchHeight = this.canvas.height - 2 * margin;
+        const penaltyWidth = 6 * this.gridSize;
+        const penaltyHeight = Math.floor(pitchHeight * 0.4); // 40% of pitch height
+        const penaltyY = (this.canvas.height - penaltyHeight) / 2;
+        const centerCircleRadius = 3 * this.gridSize;
+        const penaltyArcRadius = 2 * this.gridSize;
+
+        // Main pitch outline
+        this.ctx.strokeRect(margin, margin, pitchWidth, pitchHeight);
 
         // Center line
         const midX = this.canvas.width / 2;
         this.ctx.beginPath();
-        this.ctx.moveTo(midX, this.gridSize);
-        this.ctx.lineTo(midX, this.canvas.height - this.gridSize);
+        this.ctx.moveTo(midX, margin);
+        this.ctx.lineTo(midX, this.canvas.height - margin);
         this.ctx.stroke();
 
         // Center circle
         this.ctx.beginPath();
         this.ctx.arc(
-            this.canvas.width / 2,
+            midX,
             this.canvas.height / 2,
-            3 * this.gridSize,
+            centerCircleRadius,
             0,
             Math.PI * 2
         );
         this.ctx.stroke();
 
-        // Penalty areas
-        const penaltyWidth = 6 * this.gridSize;
-        const penaltyHeight = 14 * this.gridSize;
-        const penaltyY = (this.canvas.height - penaltyHeight) / 2;
+        // Center spot
+        this.ctx.beginPath();
+        this.ctx.arc(midX, this.canvas.height / 2, 2, 0, Math.PI * 2);
+        this.ctx.fill();
 
         // Left penalty area
-        this.ctx.strokeRect(this.gridSize, penaltyY, penaltyWidth, penaltyHeight);
+        this.ctx.strokeRect(margin, penaltyY, penaltyWidth, penaltyHeight);
+        
         // Right penalty area
         this.ctx.strokeRect(
-            this.canvas.width - this.gridSize - penaltyWidth,
+            this.canvas.width - margin - penaltyWidth,
             penaltyY,
             penaltyWidth,
             penaltyHeight
         );
+
+        // Left penalty arc
+        this.ctx.beginPath();
+        this.ctx.arc(
+            margin + penaltyWidth,
+            this.canvas.height / 2,
+            penaltyArcRadius,
+            -Math.PI / 3,
+            Math.PI / 3
+        );
+        this.ctx.stroke();
+
+        // Right penalty arc
+        this.ctx.beginPath();
+        this.ctx.arc(
+            this.canvas.width - margin - penaltyWidth,
+            this.canvas.height / 2,
+            penaltyArcRadius,
+            Math.PI * 2/3,
+            -Math.PI * 2/3
+        );
+        this.ctx.stroke();
+
+        // Left goal
+        this.ctx.strokeRect(
+            0,
+            this.canvas.height / 2 - this.gridSize * 2,
+            margin,
+            this.gridSize * 4
+        );
+
+        // Right goal
+        this.ctx.strokeRect(
+            this.canvas.width - margin,
+            this.canvas.height / 2 - this.gridSize * 2,
+            margin,
+            this.gridSize * 4
+        );
+
+        // Draw goal nets (diagonal lines)
+        this.ctx.beginPath();
+        this.ctx.lineWidth = 1;
+
+        // Left goal net
+        for (let i = 0; i <= 8; i++) {
+            // Vertical lines
+            this.ctx.moveTo(i * (margin / 8), this.canvas.height / 2 - this.gridSize * 2);
+            this.ctx.lineTo(i * (margin / 8), this.canvas.height / 2 + this.gridSize * 2);
+            // Horizontal lines
+            this.ctx.moveTo(0, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
+            this.ctx.lineTo(margin, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
+        }
+
+        // Right goal net
+        for (let i = 0; i <= 8; i++) {
+            // Vertical lines
+            this.ctx.moveTo(this.canvas.width - margin + i * (margin / 8), this.canvas.height / 2 - this.gridSize * 2);
+            this.ctx.lineTo(this.canvas.width - margin + i * (margin / 8), this.canvas.height / 2 + this.gridSize * 2);
+            // Horizontal lines
+            this.ctx.moveTo(this.canvas.width - margin, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
+            this.ctx.lineTo(this.canvas.width, this.canvas.height / 2 - this.gridSize * 2 + i * this.gridSize);
+        }
+        this.ctx.stroke();
     }
 
     draw() {
