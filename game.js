@@ -525,38 +525,21 @@ class Game {
         const elapsed = currentTime - this.lastRenderTime;
         
         if (elapsed > 1000 / (this.speed / 10)) {
-            this.update();
+            // Handle FFP spawning
+            if (!this.ffp && currentTime - this.lastFfpSpawn > this.ffpSpawnInterval) {
+                this.generateFfp();
+                this.lastFfpSpawn = currentTime;
+            }
+
+            if (!this.gameOver) {
+                this.update();
+                // Check FFP collision after movement
+                this.checkFfpCollision();
+            }
+
             this.draw();
             this.lastRenderTime = currentTime;
             this.frameCount++;
-        }
-
-        // Handle FFP spawning
-        if (!this.ffp && currentTime - this.lastFfpSpawn > this.ffpSpawnInterval) {
-            this.generateFfp();
-            this.lastFfpSpawn = currentTime;
-        }
-
-        if (!this.gameOver) {
-            // Update snake position
-            this.snake.move();
-
-            // Check collisions
-            if (this.checkCollision()) {
-                this.gameOver = true;
-                return;
-            }
-
-            // Check food collision
-            if (this.checkFoodCollision()) {
-                this.score += 10;
-                this.updateScore();
-                this.food = this.generateFood();
-                this.snake.grow();
-            }
-
-            // Check FFP collision
-            this.checkFfpCollision();
         }
 
         this.animationFrameId = requestAnimationFrame((time) => this.gameLoop(time));
@@ -683,17 +666,35 @@ class Game {
     }
 
     checkCollision() {
-        // Implement collision checking logic
-        return false; // Placeholder, actual implementation needed
+        const head = this.snake.body[0];
+        
+        // Wall collision
+        if (head.x < 0 || head.x >= this.canvas.width / this.gridSize ||
+            head.y < 0 || head.y >= this.canvas.height / this.gridSize) {
+            return true;
+        }
+
+        // Self collision
+        for (let i = 1; i < this.snake.body.length; i++) {
+            if (head.x === this.snake.body[i].x && head.y === this.snake.body[i].y) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     checkFoodCollision() {
-        // Implement food collision checking logic
-        return false; // Placeholder, actual implementation needed
+        const head = this.snake.body[0];
+        const foodCells = this.getFoodCells();
+        return foodCells.some(cell => head.x === cell.x && head.y === cell.y);
     }
 
     updateScore() {
-        // Implement score update logic
+        const scoreElement = document.getElementById('score');
+        if (scoreElement) {
+            scoreElement.textContent = `Transfer War Chest: £${this.score * 5}`;
+        }
     }
 }
 
